@@ -2,7 +2,7 @@
 //                                               //
 //  CREATED BY  : Jérémy Noverraz                //
 //  CREATED ON  : 01.02.2022                     //
-//  VERSION     : 1.0                            //                                      
+//  VERSION     : 1.7                            //                                      
 //  DESCRIPTION : 2CH AC Dimmer over MQTT        //
 //  LICENCE : GNU                                //
 //                                               //
@@ -41,24 +41,27 @@ const char* mqtt_commandtopic_channel2 = "helitek/dimmers/230/channel2"; //your 
 const char* mqtt_statustopic_channel2 = "helitek/dimmers/230/channel2/status"; //your MQTT status topic
 const char* mqtt_statetopic_channel2 = "helitek/dimmers/230/channel2/state"; //your MQTT state topic
 
-char msg[50]; //buffer for MQTT messages
+//MQTT variables
+char msg[50]; //buffer for MQTT messages (must be big enough to hold the message) 
 
-WiFiClient wclient; //WiFi client
+//Instanciate wifi client from WiFiClient class 
+WiFiClient wclient; //WiFi client 
 
-PubSubClient client(wclient); // Setup MQTT client
+//Instanciate PubSubClient(client) from PubSubClient class from PubSubClient library with the wifi client
+PubSubClient client(wclient); // Setup MQTT client with wifi client
 
-//Handle(manipulate) incomming messages from MQTT broker
+//Handle(manipulate) incomming messages from MQTT broker (callback function) 
 void callback(char* topic, byte* payload, unsigned int length){ 
-  String response; //create a string to hold the response_channel_1
-  int power_channel_1; //create a variable to hold the power value
-  int power_channel_2; //create a variable to hold the power value
+  String response; //create a string to hold the response_channel_1 message
+  int power_channel_1; //create a variable to hold the power value for channel 1
+  int power_channel_2; //create a variable to hold the power value for channel 2
 
-  //convert the payload to a string
-  for (int i = 0; i < length; i++) { //loop through the message and add each byte to the string response
+  //convert the payload to a string and store it in the response variable
+  for (int i = 0; i < length; i++) { //loop through the message and add each byte to the string response 
     response += (char)payload[i]; //add the payload to the response string 
   }
 
-  //if the message is for the command topic for channel 1
+  //if the message is for the command topic for channel 1 (ex: helitek/dimmers/230/channel1) 
   if (String(topic) == mqtt_commandtopic_channel1) { //if the topic is the command topic for channel 1
     Serial.println("Message arrived [" + String(topic) + "]: " + response); //print the message to the serial monitor
     power_channel_1 = response.toInt(); //convert the message to an integer and store it in the power variable
@@ -66,10 +69,10 @@ void callback(char* topic, byte* payload, unsigned int length){
     delay(50); //delay to allow the dimmer to change state before sending the state message
     snprintf(msg, 50, "%d", dimmer.getPower()); //convert the power to a string and store it in the msg buffer
     client.publish(mqtt_statetopic_channel1, msg); //publish the power to the state topic on the MQTT broker
-    Serial.print("State: "); //print the state to the serial monitor 
-    Serial.println(msg); //print the state to the serial monitor 
-  } else if (String(topic) == mqtt_commandtopic_channel2) {
-      Serial.println("Message arrived [" + String(topic) + "]: " + response); //print the message to the serial monitor 
+    Serial.print("State: "); //print the state to the serial monitor  
+    Serial.println(msg); //print the state to the serial monitor  
+  } else if (String(topic) == mqtt_commandtopic_channel2) { //else if the topic is the command topic for channel 2 (ex: helitek/dimmers/230/channel2) 
+      Serial.println("Message arrived [" + String(topic) + "]: " + response); //print the message to the serial monitor  
       power_channel_2 = response.toInt(); //convert the message to an integer and store it in the power variable
       dimmer2.setPower(power_channel_2); //set the power of the dimmer
       delay(50); //delay to allow the dimmer to change state before sending the state message
@@ -82,72 +85,73 @@ void callback(char* topic, byte* payload, unsigned int length){
 }
 
 //Connect to wifi network
-void setup_wifi(){
-  Serial.print("\nConnecting to ");
-  Serial.println(ssid);
+void setup_wifi(){ //setup wifi function
+  Serial.print("\nConnecting to "); //print to the serial monitor that we are connecting to wifi network 
+  Serial.println(ssid); //print the network name to the serial monitor 
 
   //wifi mode
-  WiFi.mode(WIFI_STA);
+  WiFi.mode(WIFI_STA); //set the wifi mode to station mode (no access point) 
 
   //wifi begin
-  WiFi.begin(ssid, password);
+  WiFi.begin(ssid, password); //connect to the wifi network with the network name and password provided above 
 
   //wait for connection
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  while (WiFi.status() != WL_CONNECTED) { //while the wifi connection is not established keep trying to connect
+    delay(500); //delay for 500ms to allow the wifi to connect
+    Serial.print("."); //print a dot to the serial monitor to show the connection is being established 
   }
 
-  Serial.println();
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+  Serial.println(); //print a new line to the serial monitor to show the connection has been established 
+  Serial.println("WiFi connected"); //print to the serial monitor that the wifi connection has been established
+  Serial.println("IP address: "); //print to the serial monitor that the ip address is 
+  Serial.println(WiFi.localIP()); //print the ip address to the serial monitor 
 }
 
 // Reconnect to client
-void reconnect(){
+void reconnect(){ //reconnect function
   //Loop until we're reconnected
-  while (!client.connected()){
-    Serial.print("Attempting MQTT connection...");
+  while (!client.connected()){ //while the client is not connected to the MQTT broker, keep trying to connect 
+    Serial.print("Attempting MQTT connection..."); //print to the serial monitor that the client is attempting to connect to the MQTT broker 
     //Attempt to connect
-    if(client.connect(mqtt_client_id, mqtt_user, mqtt_password)){
+    if(client.connect(mqtt_client_id, mqtt_user, mqtt_password)){ //if the client is able to connect to the MQTT broker
       client.subscribe(mqtt_commandtopic_channel1); //subscribe to the command topic channel 1
-      client.subscribe(mqtt_commandtopic_channel2); //subscribe to the command topic channel 2
-      Serial.println("connected");
-      Serial.print("Subscribing to: ");
-      Serial.println(mqtt_commandtopic_channel1); //print the command topic to the serial monitor
-      Serial.print("\n");
-      Serial.println(mqtt_commandtopic_channel2); //print the command topic to the serial monitor
-      Serial.println('\n');
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      // Wait 5 seconds before retrying
-      delay(5000);
+      client.subscribe(mqtt_commandtopic_channel2); //subscribe to the command topic channel 2 
+      Serial.println("connected"); //print to the serial monitor that the client has connected to the MQTT broker
+      Serial.print("Subscribing to: "); //print to the serial monitor that the client is subscribing to
+      Serial.println(mqtt_commandtopic_channel1); //print the command topic to the serial monitor 
+      Serial.print("\n"); //print a new line to the serial monitor 
+      Serial.println(mqtt_commandtopic_channel2); //print the command topic to the serial monitor 
+      Serial.println('\n'); //print a new line to the serial monitor 
+    } else { //else if the client is not able to connect to the MQTT broker 
+      Serial.print("failed, rc="); //print to the serial monitor that the client has failed to connect to the MQTT broker
+      Serial.print(client.state()); //print the state of the client to the serial monitor
+      Serial.println(" try again in 5 seconds"); //print to the serial monitor that the client will attempt to connect to the MQTT broker in 5 seconds 
+      // Wait 5 seconds before retrying 
+      delay(5000); //delay for 5 seconds 
     }
   }
 }
 
-void setup() {
-  //dimmer begin in NORMAL_MODE and turn ON
-  dimmer.begin(NORMAL_MODE, ON); //dimmer begin in NORMAL_MODE and turn ON
-  dimmer2.begin(NORMAL_MODE, ON); //dimmer begin in NORMAL_MODE and turn ON
-  Serial.begin(9600); //Start serial communication with baud rate of 9600
+//Setup the dimmers
+void setup() { //setup function
+  //dimmers begin in NORMAL_MODE and turn ON
+  dimmer.begin(NORMAL_MODE, ON); //dimmer begin in NORMAL_MODE and turn ON 
+  dimmer2.begin(NORMAL_MODE, ON); //dimmer2 begin in NORMAL_MODE and turn ON
+  Serial.begin(9600); //Start serial communication with baud rate of 9600 
 
-  //delay 100ms to allow the serial monitor to start
-  delay(100);
+  //delay 100ms to allow the serial monitor to start//
+  delay(100); //delay for 100ms
 
-  //setup wifi
+  //setup wifi //
   setup_wifi(); //Connect to wifi network
 
-  //setup MQTT
+  //setup MQTT //
   client.setServer(MQTT_SERVER, mqtt_port); //Set MQTT server and port
   client.setCallback(callback); //Set callback function for incomming messages from MQTT broker 
 }
 
-//Loop forever
-void loop() {
+//Loop forever //
+void loop() { //loop function
   if (!client.connected()) { //Check if client is connected to MQTT broker, if not reconnect
     reconnect(); //then reconnect
   }

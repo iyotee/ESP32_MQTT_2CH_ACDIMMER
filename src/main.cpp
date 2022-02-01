@@ -8,23 +8,21 @@
 //                                               //
 ///////////////////////////////////////////////////
 
-#include <Arduino.h>
-#include <RBDdimmer.h>
-#include <WiFi.h>
-#include <WiFiClient.h>
-#include <PubSubClient.h>
-
+//Import libraries
+#include <Arduino.h> //Arduino library
+#include <RBDdimmer.h> //RBDdimmer library
+#include <WiFi.h> //WiFi library
+#include <WiFiClient.h> //WiFiClient library
+#include <PubSubClient.h> //PubSubClient library
 
 //Define the pins for the dimmer
-#define OUTPUT_PIN_CHANNEL_1 16
-#define OUTPUT_PIN_CHANNEL_2 17 
-#define ZEROCROSS_PIN 18 
-
+#define OUTPUT_PIN_CHANNEL_1 16 //Output pin for the dimmer channel 1
+#define OUTPUT_PIN_CHANNEL_2 17 //Output pin for the dimmer channel 2
+#define ZEROCROSS_PIN 18 //Zero cross pin for the dimmer
 
 //Instantiate the dimmers objects
-dimmerLamp dimmer(OUTPUT_PIN_CHANNEL_1, ZEROCROSS_PIN); //initialize port for dimmer for ESP32
-dimmerLamp dimmer2(OUTPUT_PIN_CHANNEL_2, ZEROCROSS_PIN); //initialize port for dimmer for ESP32
-
+dimmerLamp dimmer(OUTPUT_PIN_CHANNEL_1, ZEROCROSS_PIN); //initialize object from dimmerLamp class for channel 1 (ESP32, Arduino Due)
+dimmerLamp dimmer2(OUTPUT_PIN_CHANNEL_2, ZEROCROSS_PIN); //initialize object from dimmerLamp class for channel 2 (ESP32, Arduino Due)
 
 //Wifi network credentials
 const char* ssid = "YOUR_SSID_HERE"; //your network name
@@ -43,9 +41,7 @@ const char* mqtt_commandtopic_channel2 = "helitek/dimmers/230/channel2"; //your 
 const char* mqtt_statustopic_channel2 = "helitek/dimmers/230/channel2/status"; //your MQTT status topic
 const char* mqtt_statetopic_channel2 = "helitek/dimmers/230/channel2/state"; //your MQTT state topic
 
-
 char msg[50]; //buffer for MQTT messages
-
 
 WiFiClient wclient; //WiFi client
 
@@ -57,14 +53,14 @@ void callback(char* topic, byte* payload, unsigned int length){
   int power_channel_1; //create a variable to hold the power value
   int power_channel_2; //create a variable to hold the power value
 
+  //convert the payload to a string
   for (int i = 0; i < length; i++) { //loop through the message and add each byte to the string response
     response += (char)payload[i]; //add the payload to the response string 
   }
 
-  
   //if the message is for the command topic for channel 1
-  if (String(topic) == mqtt_commandtopic_channel1) {
-    Serial.println("Message arrived [" + String(topic) + "]: " + response); //print the message to the serial monitor 
+  if (String(topic) == mqtt_commandtopic_channel1) { //if the topic is the command topic for channel 1
+    Serial.println("Message arrived [" + String(topic) + "]: " + response); //print the message to the serial monitor
     power_channel_1 = response.toInt(); //convert the message to an integer and store it in the power variable
     dimmer.setPower(power_channel_1); //set the power of the dimmer
     delay(50); //delay to allow the dimmer to change state before sending the state message

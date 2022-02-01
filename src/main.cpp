@@ -27,15 +27,15 @@ dimmerLamp dimmer2(OUTPUT_PIN_CHANNEL_2, ZEROCROSS_PIN); //initialize port for d
 
 
 //Wifi network credentials
-const char* ssid = "SwissLabsBox2"; //your network name
-const char* password = "JP3YMhAdx4rbvyru3S"; //your network password
+const char* ssid = "YOUR_SSID_HERE"; //your network name
+const char* password = "YOUR_WIFIPASS_HERE"; //your network password
 
 //MQTT configuration
-#define MQTT_SERVER IPAddress(192, 168, 1, 4) //IP address of the MQTT broker
+#define MQTT_SERVER IPAddress(xxx, xxx, xxx, xxx) //IP address of the MQTT broker ex: 192,168,1,4
 const int mqtt_port = 1883; //your MQTT port
-const char* mqtt_user = "helitekmqttuser"; //your MQTT user
-const char* mqtt_password = "W3lc0m32h3l1t3k"; //your MQTT password
-const char* mqtt_client_id = "AC Dimmer channel 1"; //your MQTT client id (must be unique)
+const char* mqtt_user = "YOUR MQTT USERNAME HERE(OPTIONAL)"; //your MQTT user (optional but may need to delete it in the code later)
+const char* mqtt_password = "YOUR MQTT PASSWORD HERE(OPTIONAL)"; //your MQTT password (optional but may need to delete it in the code later)
+const char* mqtt_client_id = "AC Dimmer"; //your MQTT client id (must be unique)
 const char* mqtt_commandtopic_channel1 = "helitek/dimmers/230/channel1"; //your MQTT command topic
 const char* mqtt_statustopic_channel1 = "helitek/dimmers/230/channel1/status"; //your MQTT status topic
 const char* mqtt_statetopic_channel1 = "helitek/dimmers/230/channel1/state"; //your MQTT state topic

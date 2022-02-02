@@ -16,30 +16,33 @@
 #include <PubSubClient.h> //PubSubClient library
 
 //Define the pins for the dimmer
-#define OUTPUT_PIN_CHANNEL_1 16 //Output pin for the dimmer channel 1
-#define OUTPUT_PIN_CHANNEL_2 17 //Output pin for the dimmer channel 2
-#define ZEROCROSS_PIN 18 //Zero cross pin for the dimmer
+#define OUTPUT_PIN_CHANNEL_1 16 //Output pin for the dimmer channel 1 (Arduino pin 16)
+#define OUTPUT_PIN_CHANNEL_2 17 //Output pin for the dimmer channel 2 (Arduino pin 17)
+#define ZEROCROSS_PIN 18 //Zero cross pin for the dimmer (Arduino pin 18)
 
-//Instantiate the dimmers objects
-dimmerLamp dimmer(OUTPUT_PIN_CHANNEL_1, ZEROCROSS_PIN); //initialize object from dimmerLamp class for channel 1 (ESP32, Arduino Due)
+//Instantiate the dimmers objects (dimmer1 and dimmer2) with the pins and the zero cross pin (zerocross) for the ESP32 boards (ESP32, Arduino Due) and the ESP8266 boards (ESP8266, Arduino Due) 
+dimmerLamp dimmer(OUTPUT_PIN_CHANNEL_1, ZEROCROSS_PIN); //initialize object from dimmerLamp class for channel 1 (ESP32, Arduino Due) 
 dimmerLamp dimmer2(OUTPUT_PIN_CHANNEL_2, ZEROCROSS_PIN); //initialize object from dimmerLamp class for channel 2 (ESP32, Arduino Due)
 
-//Wifi network credentials
+//Wifi network credentials and MQTT broker credentials
+//Change the values for your network and broker
+//You can find the network credentials and the broker credentials in the MQTT broker application
+
 const char* ssid = "YOUR_SSID_HERE"; //your network name
 const char* password = "YOUR_PASSWORD_HERE"; //your network password
 
 //MQTT configuration
 #define MQTT_SERVER IPAddress(xxx,xxx,xxx,xxx) //IP address of the MQTT broker ex: 192,168,1,4
-const int mqtt_port = 1883; //your MQTT port
-const char* mqtt_user = "YOUR_MQTT_USERNAME"; //your MQTT user (optional but may need to delete it in the code later)
-const char* mqtt_password = "YOUR_MQTT_USER_PASSWORD"; //your MQTT password (optional but may need to delete it in the code later)
-const char* mqtt_client_id = "AC Dimmer"; //your MQTT client id (must be unique)
-const char* mqtt_commandtopic_channel1 = "helitek/dimmers/230/channel1"; //your MQTT command topic for channel 1
-const char* mqtt_statustopic_channel1 = "helitek/dimmers/230/channel1/status"; //your MQTT status topic for channel 1
-const char* mqtt_statetopic_channel1 = "helitek/dimmers/230/channel1/state"; //your MQTT state topic for channel 1
-const char* mqtt_commandtopic_channel2 = "helitek/dimmers/230/channel2"; //your MQTT command topic for channel 2
-const char* mqtt_statustopic_channel2 = "helitek/dimmers/230/channel2/status"; //your MQTT status topic for channel 2
-const char* mqtt_statetopic_channel2 = "helitek/dimmers/230/channel2/state"; //your MQTT state topic for channel 2
+const int mqtt_port = 1883; //your MQTT port ex: 1883
+const char* mqtt_user = "YOUR_MQTT_USERNAME_HERE"; //your MQTT user (optional but may need to delete it in the code later) ex: "username"
+const char* mqtt_password = "YOUR_MQTT_USER_PASSWORD_HERE"; //your MQTT password (optional but may need to delete it in the code later) ex: "password"
+const char* mqtt_client_id = "AC Dimmer"; //your MQTT client id (must be unique) ex: "AC Dimmer"
+const char* mqtt_commandtopic_channel1 = "helitek/dimmers/230/channel1"; //your MQTT command topic for channel 1 ex: "helitek/dimmers/230/channel1"
+const char* mqtt_statustopic_channel1 = "helitek/dimmers/230/channel1/status"; //your MQTT status topic for channel 1 ex: "helitek/dimmers/230/channel1/status"
+const char* mqtt_statetopic_channel1 = "helitek/dimmers/230/channel1/state"; //your MQTT state topic for channel 1 ex: "helitek/dimmers/230/channel1/state"
+const char* mqtt_commandtopic_channel2 = "helitek/dimmers/230/channel2"; //your MQTT command topic for channel 2  ex: "helitek/dimmers/230/channel2"
+const char* mqtt_statustopic_channel2 = "helitek/dimmers/230/channel2/status"; //your MQTT status topic for channel 2 ex: "helitek/dimmers/230/channel2/status"
+const char* mqtt_statetopic_channel2 = "helitek/dimmers/230/channel2/state"; //your MQTT state topic for channel 2 ex: "helitek/dimmers/230/channel2/state"
 
 //MQTT variables
 char msg[50]; //buffer for MQTT messages (must be big enough to hold the message) 
@@ -47,8 +50,8 @@ char msg[50]; //buffer for MQTT messages (must be big enough to hold the message
 //Instanciate wifi client from WiFiClient class 
 WiFiClient wclient; //WiFi client 
 
-//Instanciate PubSubClient(client) from PubSubClient class from PubSubClient library with the wifi client
-PubSubClient client(wclient); // Setup MQTT client with wifi client
+//Instanciate PubSubClient(client) from PubSubClient class from PubSubClient library with the wifi client as parameter 
+PubSubClient client(wclient); // Setup MQTT client with wifi client 
 
 //Handle(manipulate) incomming messages from MQTT broker (callback function) 
 void callback(char* topic, byte* payload, unsigned int length){ 
@@ -60,22 +63,21 @@ void callback(char* topic, byte* payload, unsigned int length){
   for (int i = 0; i < length; i++) { //loop through the message and add each byte to the string response 
     response += (char)payload[i]; //add the payload to the response string 
   }
-
   //if the message is for the command topic for channel 1 (ex: helitek/dimmers/230/channel1) 
   if (String(topic) == mqtt_commandtopic_channel1) { //if the topic is the command topic for channel 1
     Serial.println("Message arrived [" + String(topic) + "]: " + response); //print the message to the serial monitor
     //if the message response is "auto"
-    if (response == "auto") { //if the message response is "auto"
+    if (response == "low") { //if the message response is "auto"
       dimmer.setPower(0); //set the dimmer to auto mode
-    } else if (response == "smart") { //if the message response is "smart"
+    } else if (response == "eco") { //if the message response is "smart"
       dimmer.setPower(20); //set the dimmer to smart mode
-    } else if (response == "whoosh") { //if the message response is "whoosh"
+    } else if (response == "smart") { //if the message response is "whoosh"
       dimmer.setPower(50); //set the dimmer to whoosh mode
-    } else if (response == "eco") { //if the message response is "eco"
+    } else if (response == "fast") { //if the message response is "eco"
       dimmer.setPower(80); //set the dimmer to eco mode
-    } else if (response == "breeze") { //if the message response is "breeze"
+    } else if (response == "hurricane") { //if the message response is "breeze"
       dimmer.setPower(100); //set the dimmer to breeze mode
-    } else { //if the message response is not "auto", "smart", "whoosh", "eco", or "breeze"
+    } else { //if the message response is not "auto", "smart", "whoosh", "eco", "hurricane" or "breeze"
       power_channel_1 = response.toInt(); //convert the message to an integer and store it in the power variable
       dimmer.setPower(power_channel_1); //set the power of the dimmer
       delay(50); //delay to allow the dimmer to change state before sending the state message
@@ -84,23 +86,20 @@ void callback(char* topic, byte* payload, unsigned int length){
       Serial.print("State: "); //print the state to the serial monitor  
       Serial.println(msg); //print the state to the serial monitor  
     }
-    
-
     //if the message is for the command topic for channel 2 (ex: helitek/dimmers/230/channel2)
   } else if (String(topic) == mqtt_commandtopic_channel2) { //if the topic is the command topic for channel 2
     Serial.println("Message arrived [" + String(topic) + "]: " + response); //print the message to the serial monitor
-    //if the message response is "auto"
-    if (response == "auto") { //if the message response is "auto"
-      dimmer2.setPower(0); //set the dimmer to auto mode
-    } else if (response == "smart") { //if the message response is "smart"
-      dimmer2.setPower(20); //set the dimmer to smart mode
-    } else if (response == "whoosh") { //if the message response is "whoosh"
-      dimmer2.setPower(50); //set the dimmer to whoosh mode
+    if (response == "low") { //if the message response is "low"
+      dimmer2.setPower(0); //set the dimmer to low mode
     } else if (response == "eco") { //if the message response is "eco"
-      dimmer2.setPower(80); //set the dimmer to eco mode
-    } else if (response == "breeze") { //if the message response is "breeze"
-      dimmer2.setPower(100); //set the dimmer to breeze mode
-    } else { //if the message response is not "auto", "smart", "whoosh", "eco", or "breeze"
+      dimmer2.setPower(20); //set the dimmer to eco mode
+    } else if (response == "smart") { //if the message response is "smart"
+      dimmer2.setPower(50); //set the dimmer to smart mode
+    } else if (response == "fast") { //if the message response is "fast"
+      dimmer2.setPower(80); //set the dimmer to fast mode
+    } else if (response == "hurricane") { //if the message response is "hurricane"
+      dimmer2.setPower(100); //set the dimmer to hurricane mode
+    } else {  //if the message response is not "low", "eco", "smart", "fast", or "hurricane"
       power_channel_2 = response.toInt(); //convert the message to an integer and store it in the power variable
       dimmer2.setPower(power_channel_2); //set the power of the dimmer
       delay(50); //delay to allow the dimmer to change state before sending the state message
@@ -110,7 +109,6 @@ void callback(char* topic, byte* payload, unsigned int length){
       Serial.println(msg); //print the state to the serial monitor  
     }
   }
-  
 }
 
 //Connect to wifi network
@@ -161,7 +159,7 @@ void reconnect(){ //reconnect function
   }
 }
 
-//Setup the dimmers
+//Setup the dimmers and the MQTT client
 void setup() { //setup function
   //dimmers begin in NORMAL_MODE and turn ON
   dimmer.begin(NORMAL_MODE, ON); //dimmer begin in NORMAL_MODE and turn ON 
@@ -179,7 +177,7 @@ void setup() { //setup function
   client.setCallback(callback); //Set callback function for incomming messages from MQTT broker 
 }
 
-//Loop forever //
+//Loop forever
 void loop() { //loop function
   if (!client.connected()) { //Check if client is connected to MQTT broker, if not reconnect
     reconnect(); //then reconnect

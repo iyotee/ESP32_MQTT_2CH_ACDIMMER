@@ -2,7 +2,7 @@
 //                                               //
 //  CREATED BY  : Jérémy Noverraz                //
 //  CREATED ON  : 01.02.2022                     //
-//  VERSION     : 1.7                            //                                      
+//  VERSION     : 1.0.8                          //                                      
 //  DESCRIPTION : 2CH AC Dimmer over MQTT        //
 //  LICENCE : GNU                                //
 //                                               //

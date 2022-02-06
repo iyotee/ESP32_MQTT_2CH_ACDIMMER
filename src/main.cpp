@@ -2,7 +2,7 @@
 //                                               //
 //  CREATED BY  : Jérémy Noverraz                //
 //  CREATED ON  : 01.02.2022                     //
-//  VERSION     : 1.0.8                          //                                      
+//  VERSION     : 1.0.9                          //                                      
 //  DESCRIPTION : 2CH AC Dimmer over MQTT        //
 //  LICENCE : GNU                                //
 //                                               //
@@ -14,6 +14,7 @@
 #include <WiFi.h> //WiFi library
 #include <WiFiClient.h> //WiFiClient library
 #include <PubSubClient.h> //PubSubClient library
+#include <SPIFFS.h> //SPIFFS library
 
 //Define the pins for the dimmer
 #define OUTPUT_PIN_CHANNEL_1 16 //Output pin for the dimmer channel 1 (Arduino pin 16)
@@ -28,14 +29,14 @@ dimmerLamp dimmer2(OUTPUT_PIN_CHANNEL_2, ZEROCROSS_PIN); //initialize object fro
 //Change the values for your network and broker
 //You can find the network credentials and the broker credentials in the MQTT broker application
 
-const char* ssid = "YOUR_SSID_HERE"; //your network name
-const char* password = "YOUR_PASSWORD_HERE"; //your network password
+const char* ssid = "SwissLabsBox2"; //your network name
+const char* password = "JP3YMhAdx4rbvyru3S"; //your network password
 
 //MQTT configuration
-#define MQTT_SERVER IPAddress(xxx,xxx,xxx,xxx) //IP address of the MQTT broker ex: 192,168,1,4
+#define MQTT_SERVER IPAddress(192,168,1,4) //IP address of the MQTT broker ex: 192,168,1,4
 const int mqtt_port = 1883; //your MQTT port ex: 1883
-const char* mqtt_user = "YOUR_MQTT_USERNAME_HERE"; //your MQTT user (optional but may need to delete it in the code later) ex: "username"
-const char* mqtt_password = "YOUR_MQTT_USER_PASSWORD_HERE"; //your MQTT password (optional but may need to delete it in the code later) ex: "password"
+const char* mqtt_user = "helitekmqttuser"; //your MQTT user (optional but may need to delete it in the code later) ex: "username"
+const char* mqtt_password = "W3lc0m32h3l1t3k"; //your MQTT password (optional but may need to delete it in the code later) ex: "password"
 const char* mqtt_client_id = "AC Dimmer"; //your MQTT client id (must be unique) ex: "AC Dimmer"
 const char* mqtt_commandtopic_channel1 = "helitek/dimmers/230/channel1"; //your MQTT command topic for channel 1 ex: "helitek/dimmers/230/channel1"
 const char* mqtt_statustopic_channel1 = "helitek/dimmers/230/channel1/status"; //your MQTT status topic for channel 1 ex: "helitek/dimmers/230/channel1/status"
@@ -66,18 +67,16 @@ void callback(char* topic, byte* payload, unsigned int length){
   //if the message is for the command topic for channel 1 (ex: helitek/dimmers/230/channel1) 
   if (String(topic) == mqtt_commandtopic_channel1) { //if the topic is the command topic for channel 1
     Serial.println("Message arrived [" + String(topic) + "]: " + response); //print the message to the serial monitor
-    //if the message response is "auto"
-    if (response == "low") { //if the message response is "auto"
-      dimmer.setPower(0); //set the dimmer to auto mode
+    //if the message response is "off"
+    if (response == "off") { //if the message response is "off"
+      dimmer.setPower(0); //set the dimmer to off mode
     } else if (response == "eco") { //if the message response is "smart"
-      dimmer.setPower(20); //set the dimmer to smart mode
-    } else if (response == "smart") { //if the message response is "whoosh"
-      dimmer.setPower(50); //set the dimmer to whoosh mode
+      dimmer.setPower(33); //set the dimmer to smart mode
     } else if (response == "fast") { //if the message response is "eco"
-      dimmer.setPower(80); //set the dimmer to eco mode
-    } else if (response == "hurricane") { //if the message response is "breeze"
+      dimmer.setPower(66); //set the dimmer to eco mode
+    } else if (response == "huricane") { //if the message response is "breeze"
       dimmer.setPower(100); //set the dimmer to breeze mode
-    } else { //if the message response is not "auto", "smart", "whoosh", "eco", "hurricane" or "breeze"
+    } else { //if the message response is not "low", "eco", "smart", "fast", or "hurricane"
       power_channel_1 = response.toInt(); //convert the message to an integer and store it in the power variable
       dimmer.setPower(power_channel_1); //set the power of the dimmer
       delay(50); //delay to allow the dimmer to change state before sending the state message
@@ -89,15 +88,13 @@ void callback(char* topic, byte* payload, unsigned int length){
     //if the message is for the command topic for channel 2 (ex: helitek/dimmers/230/channel2)
   } else if (String(topic) == mqtt_commandtopic_channel2) { //if the topic is the command topic for channel 2
     Serial.println("Message arrived [" + String(topic) + "]: " + response); //print the message to the serial monitor
-    if (response == "low") { //if the message response is "low"
-      dimmer2.setPower(0); //set the dimmer to low mode
+    if (response == "off") { //if the message response is "off"
+      dimmer2.setPower(0); //set the dimmer to off mode
     } else if (response == "eco") { //if the message response is "eco"
-      dimmer2.setPower(20); //set the dimmer to eco mode
-    } else if (response == "smart") { //if the message response is "smart"
-      dimmer2.setPower(50); //set the dimmer to smart mode
+      dimmer2.setPower(33); //set the dimmer to eco mode
     } else if (response == "fast") { //if the message response is "fast"
-      dimmer2.setPower(80); //set the dimmer to fast mode
-    } else if (response == "hurricane") { //if the message response is "hurricane"
+      dimmer2.setPower(66); //set the dimmer to fast mode
+    } else if (response == "huricane") { //if the message response is "hurricane"
       dimmer2.setPower(100); //set the dimmer to hurricane mode
     } else {  //if the message response is not "low", "eco", "smart", "fast", or "hurricane"
       power_channel_2 = response.toInt(); //convert the message to an integer and store it in the power variable
@@ -164,6 +161,8 @@ void setup() { //setup function
   //dimmers begin in NORMAL_MODE and turn ON
   dimmer.begin(NORMAL_MODE, ON); //dimmer begin in NORMAL_MODE and turn ON 
   dimmer2.begin(NORMAL_MODE, ON); //dimmer2 begin in NORMAL_MODE and turn ON
+  dimmer.setPower(0); //dimmer set power to 0
+  dimmer2.setPower(0); //dimmer2 set power to 0
   Serial.begin(9600); //Start serial communication with baud rate of 9600 
 
   //delay 100ms to allow the serial monitor to start//
